@@ -1,0 +1,6 @@
+{
+  "name": "A Expedição dos Guardiões dos Ângulos",
+  "description": "Jogo educativo interativo em 3D para estudantes do 4º ano do Ensino Fundamental (BNCC EF04MA18) para reconhecer ângulos retos e não retos em figuras poligonais.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
