@@ -614,6 +614,11 @@ export function App() {
                     return (
                       <button
                         key={v.id}
+                        onMouseEnter={() => {
+                          if (v.isRight) {
+                            sound.playRightAngleHoverChime(0);
+                          }
+                        }}
                         onClick={(e) => {
                           const rect = e.currentTarget.getBoundingClientRect();
                           handleSelectVertex(v.id, {

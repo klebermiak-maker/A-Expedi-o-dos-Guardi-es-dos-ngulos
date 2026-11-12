@@ -163,7 +163,6 @@ export const ModoTracadoModal: React.FC<ModoTracadoModalProps> = ({
   };
 
   const handlePointerMove = (e: React.PointerEvent<HTMLCanvasElement>) => {
-    if (!currentStroke) return;
     const canvas = canvasRef.current;
     if (!canvas) return;
 
@@ -174,7 +173,31 @@ export const ModoTracadoModal: React.FC<ModoTracadoModalProps> = ({
     const x = (e.clientX - rect.left) * scaleX;
     const y = (e.clientY - rect.top) * scaleY;
 
-    setCurrentStroke((prev) => (prev ? [...prev, { x, y }] : [{ x, y }]));
+    // Subtle tactile audio feedback when approaching a right-angle vertex
+    const maxAudioRadius = 80;
+    let closestDist = maxAudioRadius;
+    let closestPan = 0;
+    polygon.vertices.forEach((v) => {
+      if (!v.isRight) return;
+      const pt = toCanvasCoords(v.x, v.y);
+      const d = Math.hypot(pt.x - x, pt.y - y);
+      if (d < closestDist) {
+        closestDist = d;
+        closestPan = Math.max(-1, Math.min(1, (pt.x - x) / maxAudioRadius));
+      }
+    });
+
+    if (closestDist < maxAudioRadius) {
+      const proximity = Math.max(0, 1 - closestDist / maxAudioRadius);
+      sound.updateRightAngleProximitySonar(proximity, closestPan);
+      if (proximity > 0.78) {
+        sound.playRightAngleHoverChime(closestPan);
+      }
+    }
+
+    if (currentStroke) {
+      setCurrentStroke((prev) => (prev ? [...prev, { x, y }] : [{ x, y }]));
+    }
   };
 
   const handlePointerUp = (e: React.PointerEvent<HTMLCanvasElement>) => {

@@ -126,8 +126,49 @@ class SoundManager {
     osc.stop(now + 0.25);
   }
 
-  // Directional Right-Angle Proximity Audio Radar / Sonar
+  // Directional Right-Angle Proximity Audio Radar & Subtle Tactile Cues
   private lastSonarPingTime = 0;
+  private lastHoverChimeTime = 0;
+
+  /**
+   * Plays a distinct, gentle harmonic chime when directly hovering/entering near a 90° right angle.
+   * Gives instant tactile feedback so the student can "feel" the square shape before clicking.
+   */
+  public playRightAngleHoverChime(pan: number = 0) {
+    if (this.muted) return;
+    const ctx = this.getContext();
+    if (!ctx) return;
+
+    const now = ctx.currentTime;
+    if (now - this.lastHoverChimeTime < 0.22) return;
+    this.lastHoverChimeTime = now;
+
+    // Dual-tone harmonic interval: C6 (1046.5Hz) & G6 (1567.98Hz) - classic pure square/right-angle bell
+    const notes = [1046.5, 1567.98];
+    notes.forEach((freq, i) => {
+      const osc = ctx.createOscillator();
+      const gain = ctx.createGain();
+      osc.type = 'sine';
+      osc.frequency.setValueAtTime(freq, now + i * 0.03);
+
+      gain.gain.setValueAtTime(0.045, now + i * 0.03);
+      gain.gain.exponentialRampToValueAtTime(0.0001, now + i * 0.03 + 0.28);
+
+      if (typeof ctx.createStereoPanner === 'function') {
+        const panner = ctx.createStereoPanner();
+        panner.pan.setValueAtTime(Math.max(-1, Math.min(1, pan)), now);
+        osc.connect(gain);
+        gain.connect(panner);
+        panner.connect(ctx.destination);
+      } else {
+        osc.connect(gain);
+        gain.connect(ctx.destination);
+      }
+
+      osc.start(now + i * 0.03);
+      osc.stop(now + i * 0.03 + 0.3);
+    });
+  }
 
   /**
    * Plays subtle, clear directional audio chimes as the cursor nears a right angle (90°).
@@ -136,31 +177,31 @@ class SoundManager {
    */
   public updateRightAngleProximitySonar(proximity: number, pan: number = 0) {
     if (this.muted) return;
-    if (proximity <= 0.05) return;
+    if (proximity <= 0.04) return;
 
     const ctx = this.getContext();
     if (!ctx) return;
 
     const now = ctx.currentTime;
-    // Ping interval: farther = slower pings (600ms), closer = rapid crystalline pings (120ms)
-    const pingInterval = 0.65 - proximity * 0.52;
+    // Ping interval: farther = slower gentle pulses (540ms), closer = rapid crystalline pulses (90ms)
+    const pingInterval = 0.54 - proximity * 0.44;
     if (now - this.lastSonarPingTime < pingInterval) {
       return;
     }
     this.lastSonarPingTime = now;
 
     // Harmonic crystalline frequencies for 90° Right Angle chime (Key of C / E / G chime)
-    // When far: soft lower fundamental (523Hz C5); when close: luminous bell harmony (1046Hz C6 + 1318Hz E6)
+    // When far: warm lower fundamental (523Hz C5); when close: radiant bell harmony (1046Hz C6 + 1318Hz E6)
     const baseFreq = 523.25 + proximity * 523.25; // C5 to C6
 
     const osc = ctx.createOscillator();
     const gain = ctx.createGain();
-    osc.type = proximity > 0.75 ? 'sine' : 'triangle';
+    osc.type = proximity > 0.7 ? 'sine' : 'triangle';
     osc.frequency.setValueAtTime(baseFreq, now);
 
     // Subtle, gentle volume curve to guide without being intrusive
-    const volume = 0.02 + proximity * 0.08;
-    const duration = 0.08 + proximity * 0.12;
+    const volume = 0.025 + proximity * 0.075;
+    const duration = 0.09 + proximity * 0.12;
 
     gain.gain.setValueAtTime(volume, now);
     gain.gain.exponentialRampToValueAtTime(0.0001, now + duration);
@@ -181,16 +222,16 @@ class SoundManager {
     osc.stop(now + duration + 0.02);
 
     // Extra harmonic bell overtone when student is extremely close (direct hit on 90°)
-    if (proximity > 0.8) {
+    if (proximity > 0.75) {
       const osc2 = ctx.createOscillator();
       const gain2 = ctx.createGain();
       osc2.type = 'sine';
-      osc2.frequency.setValueAtTime(baseFreq * 1.5, now + 0.02); // Perfect fifth harmonic
-      gain2.gain.setValueAtTime(volume * 0.45, now + 0.02);
+      osc2.frequency.setValueAtTime(baseFreq * 1.5, now + 0.015); // Perfect fifth harmonic
+      gain2.gain.setValueAtTime(volume * 0.4, now + 0.015);
       gain2.gain.exponentialRampToValueAtTime(0.0001, now + duration);
       osc2.connect(gain2);
       gain2.connect(ctx.destination);
-      osc2.start(now + 0.02);
+      osc2.start(now + 0.015);
       osc2.stop(now + duration + 0.03);
     }
   }

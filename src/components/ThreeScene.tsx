@@ -871,6 +871,7 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
             type: 'vertex',
             polygonId: poly.id,
             vertexId: v.id,
+            isRight: v.isRight,
           };
           clickableObjects.push(sphereMesh);
           vGroup.add(sphereMesh);
@@ -1032,6 +1033,10 @@ export const ThreeScene: React.FC<ThreeSceneProps> = ({
       if (maxProximity > 0.04) {
         sound.updateRightAngleProximitySonar(maxProximity, targetPan);
       }
+      if (maxProximity > 0.82) {
+        sound.playRightAngleHoverChime(targetPan);
+      }
+      renderer.domElement.style.cursor = maxProximity > 0.7 ? 'pointer' : 'default';
     };
 
     const handlePointerDown = (e: PointerEvent) => {
